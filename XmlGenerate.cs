@@ -170,7 +170,9 @@ namespace SISOLVERTEST
             result = svc.FUN(xml, 1, 1); /* 参数1：XML文件路径；参数2：是否生成EXCEL报告，1=生成，0=不生成；参数3：是否生成PDF报告，1=生成，0=不生成*/
             if (result == 0)
             {
-                MessageBox.Show("成功!"); //运行完成,没有错误
+                MessageBox.Show("恭喜您，小方已成功自动生成阻抗报告，谢谢!"); //运行完成,没有错误
+                //系统自动打开生成的阻抗计算报告PDF和EXCEL  
+                openSisolverReport(filepath);
             }
             else
             {
@@ -179,7 +181,27 @@ namespace SISOLVERTEST
             }
         }
 
-        
+        private static void openSisolverReport(string filepath)
+        {
+            //自动打开已生成文件
+            string path = filepath;
+            string xml = ".xml";
+            string pdf = ".pdf";
+            string xls = ".xls";
+
+            //filepath.Replace(".xml", xml);
+            //filepath.Replace(".xml", pdf);
+            //filepath.Replace(".xml", xls);
+
+            string xmlpath = filepath.Replace(".xml", xml);
+            string pdfpath = filepath.Replace(".xml", pdf); ;
+            string xlspath = filepath.Replace(".xml", xls); ;
+            //System.Diagnostics.Process.Start(xmlpath); //打开此文件。
+            System.Diagnostics.Process.Start(pdfpath); //打开此文件。
+            System.Diagnostics.Process.Start(xlspath); //打开此文件。
+        }
+
+
         /// <summary>
         /// 给子节点组中的子节点属性批量赋值
         /// </summary>
@@ -366,12 +388,42 @@ namespace SISOLVERTEST
                         dictNew.Add(attr.Name(), attr.BoolVal().ToString());
                         break;
                     case ExtContentType.EXT_TYPE_STRING:
-                        dictNew.Add(attr.Name(), attr.StrVal().ToString());
+
+                        dictNew.Add(attr.Name(), attr.StrVal());
                         break;
+                    /*
+                     # 1、材料Faimily 是MIX
+                     # 2、料号是钻孔
+                    */
+
+
+                    //if (attr.Name() == "FAMILY")
+                    //{
+                    //    string str = "";
+                    //}
+                    //else if (attr.Name()== "FAMILY"&& attr.StrVal()== "Mixed")
+                    //{
+                    //    dictNew.Add(attr.Name(), "NY2150");
+                    //}
+                    //else
+                    //{
+                    //    dictNew.Add(attr.Name(), attr.StrVal());
+                    //}
+
                     case ExtContentType.EXT_TYPE_DATE:
                         dictNew.Add(attr.Name(), attr.Date().ToString());
                         break;
                     case ExtContentType.EXT_TYPE_ENUM:
+         
+                        //if (attr.Name() == "FAMILY" && attr.StrVal() == "Mixed")
+                        //{
+                        //    dictNew.Add(attr.Name(), "NY2150");
+                        //}
+                        //else
+                        //{
+                        //    dictNew.Add(attr.Name(), attr.StrVal());
+                        //}
+
                         dictNew.Add(attr.Name(), attr.StrVal());
                         break;
                     case ExtContentType.EXT_TYPE_LENGTH:
