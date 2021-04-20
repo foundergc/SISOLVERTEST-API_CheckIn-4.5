@@ -161,13 +161,28 @@ namespace SISOLVERTEST
 
             toolStripStatusLabel1.Text = "正在生成报告。。。";
 
-            CreateXmlDoc();
+            CreateXmlDoc(true);
 
             toolStripStatusLabel1.Text = "";
 
             //WriteBackToInplan();
             //string filepath = @"C:\SiSolverCalculate\test\API接口简单示例.xml";
             //InterfaceOfSiSolver(filepath);
+        }
+
+        private void button3_Click(object sender, EventArgs e)
+        {
+            toolStripStatusLabel1.Text = "获取料号数据中。。。";
+
+            GetJobData();
+
+            toolStripStatusLabel1.Text = "正在导出XML。。。";
+
+            CreateXmlDoc(false);
+
+            MessageBox.Show("已导出XML文件!");
+
+            toolStripStatusLabel1.Text = "";
         }
 
         private void GetJobData()
@@ -768,7 +783,6 @@ namespace SISOLVERTEST
             return mil*25.4;
         }
 
-
         private void GetDieLayer_Be()
         {
             //CopperLayresCount
@@ -1227,7 +1241,7 @@ namespace SISOLVERTEST
         /// <summary>
         /// 创建XML到文档并调用SiSolver生成阻抗报告
         /// </summary>
-        private void CreateXmlDoc()
+        private void CreateXmlDoc(bool isOutputReport)
         {
             //1、创建XML文档实例
             XmlDocument xmldoc = new XmlDocument();
@@ -1354,7 +1368,10 @@ namespace SISOLVERTEST
                 //创建文件
                 xmldoc.Save(filepath);
                 //Thread.Sleep(10000);
-                XmlGenerate.InterfaceOfSiSolver(filepath);
+                if (isOutputReport)
+                {
+                    XmlGenerate.InterfaceOfSiSolver(filepath);
+                }
                 //生成目录
                 xmlgeneratedpath = filepath;
             }
@@ -1368,9 +1385,11 @@ namespace SISOLVERTEST
                     string str = XmlGenerate.fileExists(filepath, p1, times, jobName);
                     xmldoc.Save(str);
                     //Thread.Sleep(10000);
-                    XmlGenerate.InterfaceOfSiSolver(str);//p1 + str
-                                                         //times = 1;
-
+                    if (isOutputReport)
+                    {
+                        XmlGenerate.InterfaceOfSiSolver(str);//p1 + str
+                                                             //times = 1;
+                    }
                     xmlgeneratedpath = str;
                 }
 
@@ -1378,8 +1397,10 @@ namespace SISOLVERTEST
                 {
                     xmldoc.Save(filepath);
                     //Thread.Sleep(10000);
-                    XmlGenerate.InterfaceOfSiSolver(filepath);
-
+                    if (isOutputReport)
+                    {
+                        XmlGenerate.InterfaceOfSiSolver(filepath);
+                    }
                     xmlgeneratedpath = filepath;
                 }
             }
@@ -1451,7 +1472,6 @@ namespace SISOLVERTEST
             }
             logintimes += 1;
         }
-
 
         private void jobOutStep()
         {
@@ -1575,7 +1595,6 @@ namespace SISOLVERTEST
             GetParameters();
         }
 
-
         /// <summary>
         /// original_S 获取值
         /// </summary>
@@ -1606,7 +1625,6 @@ namespace SISOLVERTEST
                 }
             //}
         }
-
 
         private void GetParameters()
         {
@@ -1943,7 +1961,6 @@ namespace SISOLVERTEST
             }
         }
 
-
         private void InplanReWriter(Double impendance, Double width,double space, string impname)
         {
             stackup = theJob.Stackup();
@@ -2014,7 +2031,5 @@ namespace SISOLVERTEST
             }
             
         }
-
-
     }
 }

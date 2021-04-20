@@ -170,7 +170,7 @@ namespace SISOLVERTEST
             result = svc.FUN(xml, 1, 1); /* 参数1：XML文件路径；参数2：是否生成EXCEL报告，1=生成，0=不生成；参数3：是否生成PDF报告，1=生成，0=不生成*/
             if (result == 0)
             {
-                MessageBox.Show("恭喜您，小方已成功自动生成阻抗报告，谢谢!"); //运行完成,没有错误
+                MessageBox.Show("阻抗报告已导出"); //运行完成,没有错误
                 //系统自动打开生成的阻抗计算报告PDF和EXCEL  
                 openSisolverReport(filepath);
             }
