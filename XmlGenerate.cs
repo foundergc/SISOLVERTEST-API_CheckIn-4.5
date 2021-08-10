@@ -164,19 +164,21 @@ namespace SISOLVERTEST
         public static void InterfaceOfSiSolver(string filepath)
         {
             //添加SPF_PROXY   的COM组件
+
+            //todo: 这里要打开
+            
+            
             int result = 0;
-            var svc = new SPF_PROXYLib.PROXY(); /* 新建COM对象*/
-            string xml = filepath;    /* 文件的绝对路径*/
-            result = svc.FUN(xml, 1, 1); /* 参数1：XML文件路径；参数2：是否生成EXCEL报告，1=生成，0=不生成；参数3：是否生成PDF报告，1=生成，0=不生成*/
+            var svc = new SPF_PROXYLib.PROXY(); // 新建COM对象
+            string xml = filepath;    //文件的绝对路径
+            result = svc.FUN(xml, 1, 1); // 参数1：XML文件路径；参数2：是否生成EXCEL报告，1=生成，0=不生成；参数3：是否生成PDF报告，1=生成，0=不生成
             if (result == 0)
             {
                 MessageBox.Show("阻抗报告已导出"); //运行完成,没有错误
-                //系统自动打开生成的阻抗计算报告PDF和EXCEL  
-                openSisolverReport(filepath);
+                openSisolverReport(filepath); //系统自动打开生成的阻抗计算报告PDF和EXCEL  
             }
             else
             {
-                //string str = "运行完成,发现错误,错误内容请查看Log文件";
                 MessageBox.Show("运行完成,发现错误,错误内容请查看Log文件");
             }
         }

@@ -6,24 +6,94 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
+using System.Runtime.InteropServices;
+using System.Threading;
 using System.Windows.Forms;
 using System.Xml;
 using InPlanLib;
 
 namespace SISOLVERTEST
 {
-    public partial class SISOLVERTEST : Form
+    public interface IClassMath
     {
-        public  IApplicationManager appManager;
-        public  IJob theJob;
-        public  IJobManager jobManager;
-        public  IAttributesModifier attModifier;
-        public  IImpedanceConstraintModifier impConstModifier;
-        public  IImpedanceConstraintModifier impConstModifier_Para;
-        public  IStackup stackup;
-        public  string jobName;
+        string jobName
+        {
+            get;
+            set;
+        }
+
+        string Default_dirPath
+        {
+            get;
+            set;
+        }
+
+        string RewritePath
+        {
+            get;
+            set;
+        }
+
+        int add(int a, int b);
+
+        void ExportXML();
+
+        void WriteBackToInplan();
+    }
+
+    [ClassInterface(ClassInterfaceType.None)]
+    public class SISOLVERTEST: IClassMath
+    {
+        public IApplicationManager appManager;
+        public IJob theJob;
+        public IJobManager jobManager;
+        public IAttributesModifier attModifier;
+        public IImpedanceConstraintModifier impConstModifier;
+        public IImpedanceConstraintModifier impConstModifier_Para;
+        public IStackup stackup;
+
+        private string _jobName;
+        private string _rewritepath;
+        private string _default_dirpath;
+        public string jobName
+        {
+            get
+            {
+                return _jobName;
+            }
+            set
+            {
+                _jobName = value;
+                SISOLVERTESTLoad();
+            }
+        }
+
+        public string RewritePath
+        {
+            get
+            {
+                return _rewritepath;
+            }
+            set
+            {
+                _rewritepath = value;
+            }
+        }
+
+        public string Default_dirPath
+        {
+            get
+            {
+                return _default_dirpath;
+            }
+            set
+            {
+                _default_dirpath = value;
+            }
+        }
+
+
         int times = 1;
         int logintimes = 1;
 
@@ -40,8 +110,13 @@ namespace SISOLVERTEST
         /*string[] attrsMaterialsCore = { "TYPE", "MRP_CODE", "VENDOR", "FAMILY", "TOP_FOIL_CU_WEIGHT", "BOT_FOIL_CU_WEIGHT", "LAMINATE_RAW_THICKNESS",
             "LAMINATE_PERMITTIVITY_" ,"LAMINATE_DISSIPATION_FACTOR_", "RESIN_PERCENTAGE_", "TOP_FOIL_RAW_THICKNESS_", "BOT_FOIL_RAW_THICKNESS_",
             "PREPREG_COUNT_", "CORE_STRUCTURE_","GLASS_TYPE_", "FOIL_TYPE_"};*/
-        string[] attrsMaterialsCore = { "TYPE", "MRP_CODE", "VENDOR", "FAMILY", "TOP_FOIL_CU_WEIGHT", "BOT_FOIL_CU_WEIGHT", "LAMINATE_RAW_THICKNESS" };
-        string[] attrsMaterialsCore_Inplan = { "TYPE", "MRP_NAME", "VENDOR", "FAMILY", "TOP_FOIL_CU_WEIGHT", "BOT_FOIL_CU_WEIGHT", "LAMINATE_THICKNESS" };
+       
+        //时间：2021/08/05 16：30 
+        //string[] attrsMaterialsCore = { "TYPE", "MRP_CODE", "VENDOR", "FAMILY", "TOP_FOIL_CU_WEIGHT", "BOT_FOIL_CU_WEIGHT", "LAMINATE_RAW_THICKNESS" };
+        //string[] attrsMaterialsCore_Inplan = { "TYPE", "MRP_NAME", "VENDOR", "FAMILY", "TOP_FOIL_CU_WEIGHT", "BOT_FOIL_CU_WEIGHT", "LAMINATE_THICKNESS" };
+
+        string[] attrsMaterialsCore = { "TYPE", "MRP_CODE", "VENDOR", "FAMILY", "TOP_FOIL_CU_WEIGHT", "BOT_FOIL_CU_WEIGHT", "LAMINATE_RAW_THICKNESS", "CORE_STRUCTURE_" };
+        string[] attrsMaterialsCore_Inplan = { "TYPE", "MRP_NAME", "VENDOR", "FAMILY", "TOP_FOIL_CU_WEIGHT", "BOT_FOIL_CU_WEIGHT", "LAMINATE_THICKNESS", "CORE_STRUCTURE_" };
 
         //string[] attrsMaterialsPrepreg = { "TYPE", "MRP_CODE", "VENDOR", "FAMILY", "PP_TYPE", "RESIN_PERCENTAGE", "PP_RAW_THICKNESS", "PP_RAW_DK_" };
         string[] attrsMaterialsPrepreg = { "TYPE", "MRP_CODE", "VENDOR", "FAMILY", "PP_TYPE", "RESIN_PERCENTAGE", "PP_RAW_THICKNESS" };
@@ -116,17 +191,23 @@ namespace SISOLVERTEST
         string base_Material;
         string customerName;
         double job_CU_FINISH_THICKNESS;
-        private string xmlgeneratedpath="";
+       //2021年8月10日16:46:19  回写路径
+        public string xmlgeneratedpath = "";
 
         public SISOLVERTEST()
         {
-            InitializeComponent();
+            //SISOLVERTESTLoad();
         }
 
         public SISOLVERTEST(string _jobname)
         {
-            InitializeComponent();
-            jobName = _jobname;
+            //jobName = _jobname;
+        }
+
+        public int add(int a, int b)
+        {
+            MessageBox.Show("C#加法代码开始工作。DLL收到EXE传来的参数，全局变量jobName被设置为：" + jobName);
+            return a + b;
         }
 
         /// <summary>
@@ -136,12 +217,13 @@ namespace SISOLVERTEST
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void SISOLVERTESTLoad(object sender, EventArgs e)
+        private void SISOLVERTESTLoad()
         {
             if (jobName is null)
             {
-                jobName = "HE08NU8G46A0_0318"; //"ME08CI4071A1_test"; //"ME14-INTEL-20191021";
+                jobName = "GE14N45G99A0-TESTL"; //"ME08CI4071A1_test"; //"ME14-INTEL-20191021";
                 //"HE06NM3247A1_SisolverTest2019101402";//"HE08NU8G20A0_Sisolver_Test02";//"ME06TEST09Z01";// "ME06AA2009A01_J_TEST01";// "HE08N84023D0";
+                MessageBox.Show(jobName + ": jobOutStep");
                 jobOutStep();
             }
             else
@@ -150,44 +232,24 @@ namespace SISOLVERTEST
             }
         }
 
-        private void button1_Click(object sender, EventArgs e)
-        {
-            //MessageBox.Show(string.Format("当前打开的Job为： {0}", jobName));
-            //creatJob();
 
-            toolStripStatusLabel1.Text = "获取料号数据中。。。";
+        public void ExportXML()
+        {
+            //2021年8月10日16:45:08  注释掉弹窗
+            //MessageBox.Show("获取料号数据中。。。");
 
             GetJobData();
 
-            toolStripStatusLabel1.Text = "正在生成报告。。。";
-
-            CreateXmlDoc(true);
-
-            toolStripStatusLabel1.Text = "";
-
-            //WriteBackToInplan();
-            //string filepath = @"C:\SiSolverCalculate\test\API接口简单示例.xml";
-            //InterfaceOfSiSolver(filepath);
-        }
-
-        private void button3_Click(object sender, EventArgs e)
-        {
-            toolStripStatusLabel1.Text = "获取料号数据中。。。";
-
-            GetJobData();
-
-            toolStripStatusLabel1.Text = "正在导出XML。。。";
+            //MessageBox.Show("正在导出XML。。。");
 
             CreateXmlDoc(false);
 
-            MessageBox.Show("已导出XML文件!");
-
-            toolStripStatusLabel1.Text = "";
+            //MessageBox.Show("已导出XML文件!");
         }
 
         private void GetJobData()
         {
-            GetMaterial();  
+            GetMaterial();
             GetStackupSeg();
             GetCopperLayer();
             GetDrillLayer();
@@ -351,11 +413,11 @@ namespace SISOLVERTEST
                                 pp = dictAllPrepreg["GENERIC_NAME"];
                                 //{[GENERIC_NAME, PP NY2150 2116 RC54%]}
                                 //截取方法： 第一个空格和第二个空格中间的字符串
-                               int a1= pp.IndexOf(" ");
-                               string[] sArray = pp.Split(' ');
-                                newpp=sArray[1];
+                                int a1 = pp.IndexOf(" ");
+                                string[] sArray = pp.Split(' ');
+                                newpp = sArray[1];
                                 //newpp = pp.Substring();
-                                base_Material = newpp;  
+                                base_Material = newpp;
                             }
                             else
                             {
@@ -585,7 +647,7 @@ namespace SISOLVERTEST
                 double a3 = (d1 + d2) / 2;
                 AllCuFinish_Thickness[j] = a3.ToString();
                 //线路完成面铜厚度取Procee（Final Assembly）下PLATING_THK_MIN_和PLATING_THK_MAX_的平均值
-                job_CU_FINISH_THICKNESS = System.Convert.ToDouble( AllCuFinish_Thickness[0]);
+                job_CU_FINISH_THICKNESS = System.Convert.ToDouble(AllCuFinish_Thickness[0]);
                 j++;
             }
 
@@ -615,7 +677,7 @@ namespace SISOLVERTEST
                     {
                         dictCU_LAYER[i].Add("CU_FINISH_THICKNESS", AllCuFinish_Thickness[0]);
                     }
-                    else if(copper.Position() == LayerPosition.LP_IL)
+                    else if (copper.Position() == LayerPosition.LP_IL)
                     {
                         // dictCU_LAYER[i].Add("CU_FINISH_THICKNESS", dictAllCU_LAYER["LAYER_FINISH_CU_THK_"]);
                         //完成铜厚 dictAllCU_LAYER["LAYER_FINISH_CU_THK_"]
@@ -678,7 +740,7 @@ namespace SISOLVERTEST
                     double cu_undercut = 0;
                     //内层
                     //外层
-                    if (copper.Position()==LayerPosition.LP_IL)
+                    if (copper.Position() == LayerPosition.LP_IL)
                     {
                         //底铜 0.333333
                         if (dictAllCU_LAYER["REQUIRED_CU_WEIGHT"] == "0.333333")
@@ -730,15 +792,15 @@ namespace SISOLVERTEST
                             MessageBox.Show("undercut待确认规则");
                         }
                     }
-                    else if(copper.Position() == LayerPosition.LP_CS || copper.Position() == LayerPosition.LP_PS) 
+                    else if (copper.Position() == LayerPosition.LP_CS || copper.Position() == LayerPosition.LP_PS)
                     {
-                        double d=0;
+                        double d = 0;
                         d = Convert.ToDouble(AllCuFinish_Thickness[0]);
                         if (d < umTomil(46))
                         {
                             cu_undercut = umTomil(13) / 2;
                         }
-                        else if ( d > umTomil(46)  && d < umTomil(63.5))
+                        else if (d > umTomil(46) && d < umTomil(63.5))
                         {
                             cu_undercut = umTomil(20) / 2;
                         }
@@ -751,7 +813,7 @@ namespace SISOLVERTEST
                             cu_undercut = umTomil(38) / 2;
                         }
                     }
-                   
+
 
 
                     //规则写入
@@ -776,11 +838,11 @@ namespace SISOLVERTEST
 
         private double umTomil(double um)
         {
-            return um*0.03937;
+            return um * 0.03937;
         }
         private double milToum(double mil)
         {
-            return mil*25.4;
+            return mil * 25.4;
         }
 
         private void GetDieLayer_Be()
@@ -835,16 +897,16 @@ namespace SISOLVERTEST
             int i = 0;
             foreach (IStackupSegment seg in stackup.BuildUpSegments()) //stackup->stksegements->stksegement
             {
-                if (seg.SegmentType() == StkSegmentType.FOIL_SEG|| seg.SegmentType() == StkSegmentType.RCF_SEG)
+                if (seg.SegmentType() == StkSegmentType.FOIL_SEG || seg.SegmentType() == StkSegmentType.RCF_SEG)
                 {
                     string s1 = "b";
                 }
                 else if (seg.SegmentType() == StkSegmentType.CORE_SEG || seg.SegmentType() == StkSegmentType.ISOLATOR_SEG)
-                
+
                 {
                     //数组以0开始  seg元素-1为其实数组元素
                     //int i = seg.SegmentIndex() - 1;
-                    dictDieLayer[i].Add("DIE_LAYER_INDEX",(i+1).ToString()); //(seg.SegmentIndex())
+                    dictDieLayer[i].Add("DIE_LAYER_INDEX", (i + 1).ToString()); //(seg.SegmentIndex())
                     dictDieLayer[i].Add("DIE_RAW_THICKNESS", seg.PressedThickness(AvailableUnits.MIL).ToString());
                     dictDieLayer[i].Add("DIE_FINISH_THICKNESS", seg.OverallThickness(AvailableUnits.MIL).ToString());
                     dictDieLayer[i].Add("RESIN_FILLED_CU_THK", "0");
@@ -876,7 +938,7 @@ namespace SISOLVERTEST
         {
             List<string[]> list = new List<string[]>();
             string[] mask = new string[4];
-            mask[0] = "4";//默认4.0
+            mask[0] = "3.6";//默认4.0
 
             double CU_FINISH_THICKNESS = job_CU_FINISH_THICKNESS;
             double T1;
@@ -979,12 +1041,12 @@ namespace SISOLVERTEST
                         Blind Via
                         Buried Via
                      */
-                    string DRILL_TYPE="";
+                    string DRILL_TYPE = "";
 
                     Dictionary<string, string> dictAllDRILL_LIST = new Dictionary<string, string>();
                     XmlGenerate.AllAttrGetKeyValues(DrllPrgs, dictAllDRILL_LIST);
 
-                    if (dictAllDRILL_LIST["DRILL_TYPE"]== "Through Hole")
+                    if (dictAllDRILL_LIST["DRILL_TYPE"] == "Through Hole")
                     {
                         DRILL_TYPE = "Through";
                     }
@@ -997,7 +1059,7 @@ namespace SISOLVERTEST
                         DRILL_TYPE = "Buried";
                     }
 
-                    
+
                     dictDRILL_LIST[i].Add("VIA_TYPE", DRILL_TYPE);
                     //dictDRILL_LIST[i].Add("VIA_TYPE", dictAllDRILL_LIST["DRILL_TYPE"]);  //根据何洪提供的API优化再修改
                     dictDRILL_LIST[i].Add("START_LAYER", dictAllDRILL_LIST["START_INDEX"]);
@@ -1063,11 +1125,11 @@ namespace SISOLVERTEST
 
                     int modecode = (int)Enum.Parse(typeof(XmlGenerate.ImdependenceModel), impCon.ModelName(), true);
                     //如果模型类型为13  提醒我  
-                    if (modecode == 9 || modecode == 10||modecode == 12 || modecode ==13||modecode==14)
+                    if (modecode == 9 || modecode == 10 || modecode == 12 || modecode == 13 || modecode == 14)
                     {
                         //MessageBox.Show(string.Format("请联系陈杏帮忙测试，模型序号{0}模型名称：{1}阻抗计算如何优化，谢谢！", modecode.ToString(), impCon.ModelName()));
                     }
-                  
+
                     //三线阻抗需要写入操作
 
 
@@ -1143,7 +1205,7 @@ namespace SISOLVERTEST
                     // 字段：目标阻抗值   ZO_TARGET CalculationRequiredImpedance()
 
                     //发现一个问题： 客户要求阻抗不在JOB中
-                    double omCustomer=impCon.CustomerRequiredImpedance(AvailableUnits.OHMS);
+                    double omCustomer = impCon.CustomerRequiredImpedance(AvailableUnits.OHMS);
                     double LWCustomer = impCon.OriginalTraceWidth(AvailableUnits.MIL);
 
                     //共面阻抗线到铜间距
@@ -1158,9 +1220,9 @@ namespace SISOLVERTEST
                     //LSCopCustomer = impCon.CustomerRequiredCoplanarSpacing(AvailableUnits.MIL); //取出来是0
 
                     double LSDifCustomer = impCon.CustomerRequiredDifferentialSpacing(AvailableUnits.MIL);
-                    
+
                     //存在不输入对应值 界面值的情况
-                    double a1  = impCon.ArtworkTraceWidth(AvailableUnits.MIL);
+                    double a1 = impCon.ArtworkTraceWidth(AvailableUnits.MIL);
 
 
                     double omdouble = impCon.CalculationRequiredImpedance(AvailableUnits.OHMS);
@@ -1203,7 +1265,7 @@ namespace SISOLVERTEST
                     //dictImpCon[i].Add("NUM_SIGNAL", " "); //待确定 omCustomer
                     dictImpCon[i].Add("ZO_TARGET", omCustomer.ToString());
                     //客户要求阻抗
-                    dictImpCon[i].Add("ZO_TOL", (omCustomer*0.1).ToString());
+                    dictImpCon[i].Add("ZO_TOL", (omCustomer * 0.1).ToString());
                     //dictImpCon[i].Add("ZO_TOL", omtol.ToString());
                     dictImpCon[i].Add("WIDTH_DESIGN", LWCustomer.ToString());
 
@@ -1271,7 +1333,7 @@ namespace SISOLVERTEST
                 dictDocument.Add("Project_Ver", "A0");
                 dictDocument.Add("Project_Designer", "SISOLVER");
                 dictDocument.Add("Date", DateTime.Now.ToString());
-                dictDocument.Add("Layer_Count",theJob.CopperLayresCount().ToString());  //jobName.Substring(2, 2)
+                dictDocument.Add("Layer_Count", theJob.CopperLayresCount().ToString());  //jobName.Substring(2, 2)
                 dictDocument.Add("Base_Material", base_Material); //base_Material
                 dictDocument.Add("Customer", "FOUNDERPCBF5");
                 dictDocument.Add("Stackup_Ready", "YES");
@@ -1358,9 +1420,17 @@ namespace SISOLVERTEST
             }
             //一级节点 顶级节点
             //jobName = "ME10N20JG6A3";//"GE02N20FQ4A0";
-            string folderpath = string.Format("D:\\SiSolverCalculate\\{0}\\", jobName);
-            string filepath = string.Format("D:\\SiSolverCalculate\\{0}\\{1}.xml", jobName, jobName);
-            string p1 = string.Format("D:\\SiSolverCalculate\\{0}\\", jobName);
+            //_default_dirpath
+            //string folderpath = string.Format("D:\\SiSolverCalculate\\{0}\\", jobName);
+            //文件夹路径
+            string folderpath = _default_dirpath+string.Format("{0}\\", jobName);
+
+            //_rewritepath
+
+            //string folderpath = _rewritepath+string.Format("{0}\\", jobName);
+
+            string filepath = folderpath+string.Format("{0}.xml", jobName);
+            string p1 = _default_dirpath+string.Format("{0}\\", jobName);
             string filename = string.Format("{0}.xml", jobName);
             if (!Directory.Exists(folderpath))
             {
@@ -1374,6 +1444,7 @@ namespace SISOLVERTEST
                 }
                 //生成目录
                 xmlgeneratedpath = filepath;
+                _rewritepath = xmlgeneratedpath;
             }
             else
             {
@@ -1391,6 +1462,7 @@ namespace SISOLVERTEST
                                                              //times = 1;
                     }
                     xmlgeneratedpath = str;
+                    _rewritepath = xmlgeneratedpath;
                 }
 
                 else
@@ -1402,6 +1474,7 @@ namespace SISOLVERTEST
                         XmlGenerate.InterfaceOfSiSolver(filepath);
                     }
                     xmlgeneratedpath = filepath;
+                    _rewritepath = xmlgeneratedpath;
                 }
             }
         }
@@ -1435,16 +1508,16 @@ namespace SISOLVERTEST
             }
         }
 
-       /// <summary>
-       /// 外部登录Inplan  
-       /// 验证登录账号密码
-       /// 循环登录 直至成功登录
-       /// </summary>
+        /// <summary>
+        /// 外部登录Inplan  
+        /// 验证登录账号密码
+        /// 循环登录 直至成功登录
+        /// </summary>
         private void LoginInplan()
         {
             appManager.Login(s1, s2);
             theJob = jobManager.OpenJob(jobName);
-            if (logintimes==1)
+            if (logintimes == 1)
             {
                 if (appManager.ErrorStatus() != 0)
                 {
@@ -1459,7 +1532,7 @@ namespace SISOLVERTEST
                 logintimes++;
                 LoginInplan();
 
-                //MessageBox.Show("未能成功登录");
+                MessageBox.Show("未能成功登录");
             }
             else if (theJob.ErrorStatus() != 0)
             {
@@ -1468,7 +1541,7 @@ namespace SISOLVERTEST
             else
             {
                 int loveu10000 = 0;
-                //MessageBox.Show("登录成功");
+                MessageBox.Show("登录成功");
             }
             logintimes += 1;
         }
@@ -1486,7 +1559,7 @@ namespace SISOLVERTEST
                 MessageBox.Show(ex.ToString());
                 //throw;
             }
-            
+
         }
 
         private void JobInStep()
@@ -1502,7 +1575,7 @@ namespace SISOLVERTEST
             {
                 string logoex = "";
                 //消息框弹窗内容、弹窗标题、确定按钮
-                MessageBox.Show("Inplan内部登录  "+appManager.ErrorMessage(), "Error", MessageBoxButtons.OK);
+                MessageBox.Show("Inplan内部登录  " + appManager.ErrorMessage(), "Error", MessageBoxButtons.OK);
                 Application.Exit();
             }
             else if (theJob.ErrorStatus() != 0)
@@ -1520,11 +1593,9 @@ namespace SISOLVERTEST
         }
 
         /// <summary>
-        /// 回写前确认
+        /// 从XML中回获取数据调用API回写到Inplan
         /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void button2_Click(object sender, EventArgs e)
+        public void WriteBackToInplan()
         {
             if (xmlgeneratedpath == "")
             {
@@ -1533,13 +1604,13 @@ namespace SISOLVERTEST
             else
             {
                 //MessageBox.Show("确认回写", "确认是否回写Inplan", MessageBoxButtons.OKCancel);
-                if (MessageBox.Show("确认回写", "确认是否回写Inplan", MessageBoxButtons.OKCancel,MessageBoxIcon.Warning)==DialogResult.OK)
+                if (MessageBox.Show("确认回写", "确认是否回写Inplan", MessageBoxButtons.OKCancel, MessageBoxIcon.Warning) == DialogResult.OK)
                 {
                     //appManager = new ApplicationManager();
                     //签出Job
                     appManager.CheckOutAll(theJob, "Test 0001 " + DateTime.Now.ToString());
                     //调用API执行回写操作
-                    WriteBackToInplan();
+                    XmlDataReader_Test();
                     //jobManager.CalculateAllImpedanceConstraints(theJob);
                     //保存Job
 
@@ -1550,25 +1621,6 @@ namespace SISOLVERTEST
                     //appManager.CheckInAll(theJob, "Test 0001 " + DateTime.Now.ToString());
                 }
             }
-        }
-
-        /// <summary>
-        /// 从XML中回获取数据调用API回写到Inplan
-        /// </summary>
-        private void WriteBackToInplan()
-        {
-            //Show 出来解决的异常
-            //第一步 测试    XML数据读取    获取优化后的线宽、线距
-            //界面需要新增按键  回写前确认
-            //第二部 测试    XML回写Inplan
-            // FirstStep
-            //循环获取Conpen序号
-            //GetloopInfo();
-
-            //GetParameters();
-            //XmlDataReader();
-
-            XmlDataReader_Test();
 
         }
 
@@ -1582,7 +1634,7 @@ namespace SISOLVERTEST
 
                     "impCon.Name() ：" + impCon.Name() + "\t\n" +
                     "impCon.ModelName() :  " + impCon.ModelName() + "\t\n" +
-                    " impCon.CamUid()  :  " + impCon.CamUid() + "\t\n"+
+                    " impCon.CamUid()  :  " + impCon.CamUid() + "\t\n" +
 
                     //" impCon.Parameter ()  :  " + impCon.Parameters() + "\t\n" +
                     " impCon.SolverName()  :  " + impCon.SolverName() + "\t\n"
@@ -1604,25 +1656,25 @@ namespace SISOLVERTEST
             //foreach (IImpedanceConstraint impCon in stackup.ImpedanceConstraints())
             //{
 
-                string original_S = "";
-                foreach (IImpedanceConstraintParameter impedanceConstraintParameter in impCon.Parameters())
+            string original_S = "";
+            foreach (IImpedanceConstraintParameter impedanceConstraintParameter in impCon.Parameters())
+            {
+                string paraname = impedanceConstraintParameter.Name();
+                if (impedanceConstraintParameter.Name() == "original_S")
                 {
-                    string paraname = impedanceConstraintParameter.Name();
-                    if (impedanceConstraintParameter.Name() == "original_S")
+                    string paravalue = "";
+                    switch (impedanceConstraintParameter.ExtendedContentType())
                     {
-                        string paravalue = "";
-                        switch (impedanceConstraintParameter.ExtendedContentType())
-                        {
-                            case ExtContentType.EXT_TYPE_LENGTH:
-                                paravalue = impedanceConstraintParameter.LengthVal(AvailableUnits.MIL).ToString();
-                                original_S = paravalue;
-                                break;
+                        case ExtContentType.EXT_TYPE_LENGTH:
+                            paravalue = impedanceConstraintParameter.LengthVal(AvailableUnits.MIL).ToString();
+                            original_S = paravalue;
+                            break;
 
-                            default:
-                                break;
-                        }
+                        default:
+                            break;
                     }
                 }
+            }
             //}
         }
 
@@ -1630,7 +1682,7 @@ namespace SISOLVERTEST
         {
 
             GetParameters2();
-            string str_parameters= "IImpedanceConstraint 的Parameters ：\n ";
+            string str_parameters = "IImpedanceConstraint 的Parameters ：\n ";
             stackup = theJob.Stackup();
             foreach (IImpedanceConstraint impCon in stackup.ImpedanceConstraints())
             {
@@ -1653,14 +1705,14 @@ namespace SISOLVERTEST
                 int p1 = 0;
                 int q1 = 0;
                 int r1 = 0;
-         
+
 
 
 
                 foreach (IImpedanceConstraintParameter impedanceConstraintParameter in impCon.Parameters())
                 {
                     string paraname = impedanceConstraintParameter.Name();
-                    if (impedanceConstraintParameter.Name()== "original_S")
+                    if (impedanceConstraintParameter.Name() == "original_S")
                     {
 
                     }
@@ -1751,7 +1803,7 @@ namespace SISOLVERTEST
                     }
                 }
 
-                double cut = (w1 - w2)/2;
+                double cut = (w1 - w2) / 2;
                 int i = 0;
 
                 //MessageBox.Show("str_parameters : \n " + a1.ToString()+" "+ b1.ToString() + " " + c1.ToString()+"\n"+
@@ -1762,7 +1814,7 @@ namespace SISOLVERTEST
                 //     p1.ToString() + " " + q1.ToString() + " " + r1.ToString() +"\n" 
                 //    );
             }
-            
+
         }
 
         private double GetParametersValue(IImpedanceConstraintParameter impedanceConstraintParameter)
@@ -1771,17 +1823,17 @@ namespace SISOLVERTEST
             double paravalue = 0;
             switch (impedanceConstraintParameter.ExtendedContentType())
             {
-            
+
                 case ExtContentType.EXT_TYPE_DOUBLE:
                     paravalue = impedanceConstraintParameter.DoubleVal();
                     return paravalue;
-                    //break;
-             
+                //break;
+
                 case ExtContentType.EXT_TYPE_LENGTH:
                     paravalue = System.Convert.ToDouble(impedanceConstraintParameter.LengthVal(AvailableUnits.MIL).ToString());
                     return paravalue;
-                    //break;
-             
+                //break;
+
                 default:
                     return paravalue;
                     //break;
@@ -1846,7 +1898,7 @@ namespace SISOLVERTEST
         /// </summary>
         private void XmlDataReader_Test()
         {
-            bool rewritoinplan=false;
+            bool rewritoinplan = false;
             XmlDocument doc = new XmlDocument();//创建XML操作对象
             //doc.Load(@"C:\SiSolverCalculate\ME06AA2009A01_J_TEST01\ME06AA2009A01_J_TEST01_副本10.xml");//加载xml文件的路径
             //xmlgeneratedpath = "";
@@ -1896,11 +1948,11 @@ namespace SISOLVERTEST
                                     InplanReWriter(impendance, linewidth, str_impName);
                                 }
 
-                                 rewritoinplan = true;
+                                rewritoinplan = true;
                                 //获取数据  --调整后的线距  
                                 //由于测试料号： 在不同阻抗模型中 间距 仅仅存在于差分阻抗模型中
                             }
-                            if (xmlgeneratedpath != ""&& rewritoinplan==true)
+                            if (xmlgeneratedpath != "" && rewritoinplan == true)
                             {
                                 MessageBox.Show("恭喜你，已成功回写进Inplan");
                             }
@@ -1921,7 +1973,7 @@ namespace SISOLVERTEST
         /// API 修改Inplan 线宽的值
         /// </summary>
         /// <param name="width"></param>
-        private void InplanReWriter(Double impendance,Double width,string impname)
+        private void InplanReWriter(Double impendance, Double width, string impname)
         {
             stackup = theJob.Stackup();
             foreach (IImpedanceConstraint impCon in stackup.ImpedanceConstraints())
@@ -1957,11 +2009,11 @@ namespace SISOLVERTEST
                     impConstModifier.Run();
 
                 }
-                  //jobManager.CalculateImpedanceConstraint(impCon);
+                //jobManager.CalculateImpedanceConstraint(impCon);
             }
         }
 
-        private void InplanReWriter(Double impendance, Double width,double space, string impname)
+        private void InplanReWriter(Double impendance, Double width, double space, string impname)
         {
             stackup = theJob.Stackup();
             foreach (IImpedanceConstraint impCon in stackup.ImpedanceConstraints())
@@ -1977,8 +2029,8 @@ namespace SISOLVERTEST
                     //Calculated Values 
                     //Proposed line width 
                     impConstModifier.SetCalculatedTraceWidth(Math.Round(width, 3), AvailableUnits.MIL);
-                    impConstModifier.SetCalculationReqLineWidthMinusTol(width*0.1, AvailableUnits.MIL);
-                    impConstModifier.SetCalculationReqLineWidthPlusTol(width*0.1, AvailableUnits.MIL);
+                    impConstModifier.SetCalculationReqLineWidthMinusTol(width * 0.1, AvailableUnits.MIL);
+                    impConstModifier.SetCalculationReqLineWidthPlusTol(width * 0.1, AvailableUnits.MIL);
 
                     //更改SetImpedanceComment
                     //永林建议暂时不用更改  2019年9月16日09:18:01
@@ -1989,13 +2041,13 @@ namespace SISOLVERTEST
                     impConstModifier.SetCalculationRequiredImpedance(impendance, AvailableUnits.OHMS);
                     impConstModifier.SetCalculationRequiredImpedanceMinusTol(impendance * 0.1, AvailableUnits.OHMS);
                     impConstModifier.SetCalculationRequiredImpedancePlusTol(impendance * 0.1, AvailableUnits.OHMS);
-                  
+
 
 
                     foreach (IImpedanceConstraintParameter impedanceConstraintParameter in impCon.Parameters())
                     {
                         impConstModifier_Para = jobManager.ImpedanceConstraintModifier(impCon);
-                      
+
                         if (impedanceConstraintParameter.Name() == "W1")
                         {
 
@@ -2018,7 +2070,7 @@ namespace SISOLVERTEST
                             impConstModifier_Para.Approve();
                             impConstModifier_Para.Run();
                         }
-          
+
                         impConstModifier_Para.Approve();
                         impConstModifier_Para.Run();
                         impConstModifier.Approve();
@@ -2029,7 +2081,7 @@ namespace SISOLVERTEST
                     //jobManager.CalculateImpedanceConstraint(impCon);
                 }
             }
-            
+
         }
     }
 }
